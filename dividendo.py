@@ -1,47 +1,68 @@
-# Últimos 10 Proventos 
+# Últimos 10 Proventos - VALE3
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+import time
 
-# 1. Configurar o Chrome em modo headless
+# Configuração do Chrome headless
 options = Options()
-options.add_argument("--headless")  # Executar sem interface gráfica
-options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920,1080")
-driver = webdriver.Chrome(options=options)  # Certifique-se de ter o chromedriver correto
+options.add_argument("--headless")
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-try:
-    # 2. Acessar a página de proventos da PETR4
-    url = "https://www.infomoney.com.br/cotacoes/b3/acao/petrobras-petr4/proventos/"
-    driver.get(url)
-    wait = WebDriverWait(driver, 10)
-    
-    # 3. Aguardar o carregamento inicial da tabela de proventos
-    wait.until(EC.presence_of_element_located((By.XPATH, "//tbody/tr")))
-    
-    # 4. Coletar apenas os primeiros 10 registros disponíveis (sem clicar em "Carregar mais")
-    rows = driver.find_elements(By.XPATH, "//tbody/tr")[:10]
+# Acessar a URL de proventos
+url = 'https://www.infomoney.com.br/cotacoes/b3/acao/vale-vale3/proventos/'
+driver.get(url)
 
-    # 5. Extrair campos VALOR e PAGAMENTO
-    proventos = []
-    for row in rows:
-        cells = row.find_elements(By.TAG_NAME, "td")
-        if len(cells) >= 7:
-            valor = cells[1].text.strip().replace("R$", "").replace(",", ".")
-            try:
-                valor_float = float(valor)
-                valor_formatado = f"{valor_float:.2f}".replace(".", ",")
-            except ValueError:
-                valor_formatado = cells[1].text.strip()
-            pagamento = cells[6].text.strip()   # Coluna "PAGAMENTO"
-            proventos.append({"VALOR": valor_formatado, "PAGAMENTO": pagamento})
+# Aguardar carregamento
+time.sleep(5)
 
-    # 6. Exibir os resultados coletados
-    for idx, prov in enumerate(proventos, start=1):
-        print(f"Data: {prov['PAGAMENTO']}, Valor: R${prov['VALOR']}")
+# Capturar o HTML renderizado
+html = driver.page_source
+soup = BeautifulSoup(html, 'html.parser')
 
-finally:
-    driver.quit()
+# Procurar por tabelas
+tables = soup.find_all('table')
+
+for table in tables:
+    tbody = table.find('tbody')
+    if tbody:
+        rows = tbody.find_all('tr')
+        if rows:
+            proventos_encontrados = 0
+            
+            for row in rows[:10]:  # Primeiros 10
+                cols = row.find_all('td')
+                if len(cols) >= 2:
+                    valor_texto = ""
+                    data_texto = ""
+                    
+                    # Procurar por valor monetário e data nas colunas
+                    for col in cols:
+                        col_text = col.text.strip()
+                        if 'R$' in col_text or (',' in col_text and any(c.isdigit() for c in col_text)):
+                            valor_texto = col_text
+                        if '/' in col_text and len(col_text) >= 8:  # Formato de data
+                            data_texto = col_text
+                    
+                    if valor_texto and data_texto:
+                        # Limpar e formatar valor
+                        valor_limpo = valor_texto.replace("R$", "").strip()
+                        
+                        # Converter para float e formatar
+                        try:
+                            valor_limpo = valor_limpo.replace(",", ".")
+                            valor_float = float(valor_limpo)
+                            valor_formatado = f"R${valor_float:.2f}".replace(".", ",")
+                        except ValueError:
+                            valor_formatado = f"R${valor_limpo}"
+                        
+                        print(f"Data: {data_texto}, Valor: {valor_formatado}")
+                        proventos_encontrados += 1
+            
+            if proventos_encontrados > 0:
+                break  # Sair se encontrou dados
+
+driver.quit()

@@ -1,4 +1,4 @@
-# Últimos 30 Cotações
+# Últimos 30 Cotações - VALE3
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -13,7 +13,7 @@ options.add_argument("--headless")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 # Acessar a URL
-url = 'https://www.infomoney.com.br/cotacoes/b3/acao/petrobras-petr4/historico/'
+url = 'https://www.infomoney.com.br/cotacoes/b3/acao/vale-vale3/historico/'
 driver.get(url)
 
 # Aguardar a tabela carregar (ajuste se necessário)
