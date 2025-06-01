@@ -89,7 +89,7 @@ def insert_stocks_to_supabase(supabase: Client, stocks_data: List[Dict[str, str]
 def main():
     """Função principal que coordena todo o processo"""
     # Nome do arquivo CSV (assumindo que está no mesmo diretório do script)
-    csv_file_path = "acoes-listadas-b3.csv"
+    csv_file_path = "infomoney_b3.csv"
     
     print("🚀 Iniciando processo de inserção de ações no Supabase...")
     
